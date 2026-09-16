@@ -1,0 +1,6 @@
+{
+  "name": "Intimation",
+  "description": "Quick Postal Delivery Intimation field app for postmen to scan articles, generate DLT SMS, and log delivery intimations.",
+  "requestFramePermissions": ["camera"],
+  "majorCapabilities": ["MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API"]
+}

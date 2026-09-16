@@ -1,0 +1,23 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512" width="512" height="512">
+  <defs>
+    <linearGradient id="redGrad" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" stop-color="#A51419" />
+      <stop offset="100%" stop-color="#7B070B" />
+    </linearGradient>
+    <filter id="shadow" x="-10%" y="-10%" width="120%" height="120%">
+      <feDropShadow dx="0" dy="8" stdDeviation="12" flood-color="#000000" flood-opacity="0.3"/>
+    </filter>
+  </defs>
+  <rect width="512" height="512" rx="112" fill="url(#redGrad)" />
+  <circle cx="256" cy="256" r="190" fill="#ffffff" fill-opacity="0.08" />
+  
+  <!-- Postal Wing / Swirl Emblem -->
+  <g transform="translate(106, 106) scale(0.585)" filter="url(#shadow)">
+    <!-- Main Postal Horn / Letter Motif -->
+    <path d="M256,40 C136.7,40 40,136.7 40,256 C40,375.3 136.7,472 256,472 C375.3,472 472,375.3 472,256 C472,136.7 375.3,40 256,40 Z" fill="#ffffff" fill-opacity="0.15"/>
+    <path d="M120,200 L256,290 L392,200 L392,340 C392,351 383,360 372,360 L140,360 C129,360 120,351 120,340 L120,200 Z" fill="#ffffff"/>
+    <path d="M120,180 C120,169 129,160 140,160 L372,160 C383,160 392,169 392,180 L256,270 L120,180 Z" fill="#FFE8E8"/>
+    <!-- Fast Intimation Speed Wings -->
+    <path d="M230,120 L282,120 L270,180 L310,180 L220,300 L236,210 L198,210 Z" fill="#C5181E" />
+  </g>
+</svg>
