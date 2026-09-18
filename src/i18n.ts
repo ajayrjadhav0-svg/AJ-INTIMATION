@@ -51,6 +51,12 @@ export interface Translations {
   confirmIntimation: string;
   cancel: string;
   sendNow: string;
+  sendVia: string;
+  channelSms: string;
+  channelWhatsApp: string;
+  channelBoth: string;
+  sendWhatsApp: string;
+  sendBoth: string;
   customer: string;
   mobile: string;
   article: string;
@@ -133,6 +139,12 @@ export const translations: Record<Language, Translations> = {
     confirmIntimation: 'CONFIRM INTIMATION',
     cancel: 'CANCEL',
     sendNow: 'SEND NOW',
+    sendVia: 'SEND VIA',
+    channelSms: 'SMS',
+    channelWhatsApp: 'WhatsApp',
+    channelBoth: 'Both (SMS + WhatsApp)',
+    sendWhatsApp: 'SEND VIA WHATSAPP',
+    sendBoth: 'SEND SMS + WHATSAPP',
     customer: 'Customer',
     mobile: 'Mobile',
     article: 'Article',
@@ -213,6 +225,12 @@ export const translations: Record<Language, Translations> = {
     confirmIntimation: 'सूचनेची पुष्टी करा',
     cancel: 'रद्द करा',
     sendNow: 'आत्ता पाठवा',
+    sendVia: 'द्वारे पाठवा',
+    channelSms: 'SMS (मेसेज)',
+    channelWhatsApp: 'व्हॉट्सअ‍ॅप',
+    channelBoth: 'दोन्ही (SMS + व्हॉट्सअ‍ॅप)',
+    sendWhatsApp: 'व्हॉट्सअ‍ॅपद्वारे पाठवा',
+    sendBoth: 'SMS + व्हॉट्सअ‍ॅप दोन्ही पाठवा',
     customer: 'ग्राहक',
     mobile: 'मोबाईल',
     article: 'आर्टिकल',
@@ -293,6 +311,12 @@ export const translations: Record<Language, Translations> = {
     confirmIntimation: 'सूचना की पुष्टि करें',
     cancel: 'रद्द करें',
     sendNow: 'अभी भेजें',
+    sendVia: 'के माध्यम से भेजें',
+    channelSms: 'SMS (मैसेज)',
+    channelWhatsApp: 'व्हाट्सएप',
+    channelBoth: 'दोनों (SMS + व्हाट्सएप)',
+    sendWhatsApp: 'व्हाट्सएप द्वारा भेजें',
+    sendBoth: 'SMS + व्हाट्सएप दोनों भेजें',
     customer: 'ग्राहक',
     mobile: 'मोबाइल',
     article: 'आर्टिकल',

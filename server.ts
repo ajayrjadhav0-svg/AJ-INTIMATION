@@ -2,6 +2,7 @@ import express from 'express';
 import http from 'http';
 import path from 'path';
 import fs from 'fs';
+import { spawn } from 'child_process';
 import dotenv from 'dotenv';
 import { GoogleGenAI } from '@google/genai';
 
@@ -187,6 +188,42 @@ app.post('/api/sms/send', async (req, res) => {
   } catch (error: any) {
     console.error('SMS Send Error:', error);
     res.status(500).json({ success: false, error: error?.message || 'Failed to send SMS' });
+  }
+});
+
+// Download Application Codebase (Tarball / Zip ready for offline development)
+app.get('/api/download-source', (req, res) => {
+  try {
+    const timestamp = new Date().toISOString().split('T')[0];
+    const filename = `intimation-postal-app-${timestamp}.tar.gz`;
+
+    res.setHeader('Content-Disposition', `attachment; filename="${filename}"`);
+    res.setHeader('Content-Type', 'application/gzip');
+
+    const tarProcess = spawn('tar', [
+      '--exclude=./node_modules',
+      '--exclude=./dist',
+      '--exclude=./.git',
+      '-czf',
+      '-',
+      '.'
+    ]);
+
+    tarProcess.stdout.pipe(res);
+
+    tarProcess.stderr.on('data', (data: any) => {
+      console.warn('Tar warning:', data.toString());
+    });
+
+    tarProcess.on('error', (err: any) => {
+      console.error('Tar packaging error:', err);
+      if (!res.headersSent) {
+        res.status(500).json({ error: 'Failed to package source code' });
+      }
+    });
+  } catch (error: any) {
+    console.error('Download source error:', error);
+    res.status(500).json({ error: error?.message || 'Download failed' });
   }
 });
 

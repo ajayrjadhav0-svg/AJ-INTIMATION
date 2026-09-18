@@ -13,7 +13,8 @@ import {
   Check,
   Send,
   AlertCircle,
-  RefreshCw
+  RefreshCw,
+  Download
 } from 'lucide-react';
 import { ArticleType, Language, PostmanSettings, PostOffice } from '../types';
 import { translations } from '../i18n';
@@ -515,8 +516,17 @@ export const SettingsModal: React.FC<SettingsModalProps> = ({
 
               <div className="pt-3 border-t border-gray-100 space-y-2">
                 <label className="block font-bold text-gray-700 uppercase">
-                  Data Reset & Maintenance
+                  Data & Source Code Export
                 </label>
+
+                <a
+                  href="/api/download-source"
+                  download
+                  className="w-full py-2.5 bg-emerald-50 hover:bg-emerald-100 text-emerald-900 font-bold rounded-xl flex items-center justify-center gap-1.5 border border-emerald-300"
+                >
+                  <Download className="w-4 h-4 text-emerald-700" />
+                  <span>Download Complete Code Files (.tar.gz)</span>
+                </a>
 
                 <button
                   type="button"

@@ -14,9 +14,10 @@ import {
   Info,
   ExternalLink,
   MessageSquare,
+  MessageCircle,
   AlertTriangle
 } from 'lucide-react';
-import { ArticleType, Intimation, Language, PostmanSettings, PostOffice } from '../types';
+import { ArticleType, DispatchChannel, Intimation, Language, PostmanSettings, PostOffice } from '../types';
 import { generateSmsMessage, translations } from '../i18n';
 import {
   cleanIndianMobileNumber,
@@ -65,6 +66,9 @@ export const NewIntimationModal: React.FC<NewIntimationModalProps> = ({
   const [collectionDays, setCollectionDays] = useState<number>(settings.defaultCollectionDays || 3);
   const [customDays, setCustomDays] = useState<string>('3');
   const [isCustomDays, setIsCustomDays] = useState(false);
+
+  // Delivery Channel: 'SMS' | 'WHATSAPP' | 'BOTH'
+  const [dispatchChannel, setDispatchChannel] = useState<DispatchChannel>('BOTH');
 
   // Message & Customization
   const [generatedMessage, setGeneratedMessage] = useState('');
@@ -190,6 +194,7 @@ export const NewIntimationModal: React.FC<NewIntimationModalProps> = ({
       status: 'MANUAL SMS',
       createdAt: new Date().toISOString(),
       sentAt: new Date().toISOString(),
+      dispatchChannel: 'SMS',
       ...recordToSave,
     };
 
@@ -199,6 +204,36 @@ export const NewIntimationModal: React.FC<NewIntimationModalProps> = ({
 
     // Trigger native SMS app
     window.location.href = smsUrl;
+  };
+
+  const handleOpenWhatsApp = (recordToSave?: Partial<Intimation>) => {
+    const { normalized } = cleanIndianMobileNumber(mobileNumber);
+    const whatsappUrl = `https://api.whatsapp.com/send?phone=91${normalized}&text=${encodeURIComponent(generatedMessage)}`;
+
+    // Create record as SENT via WhatsApp
+    const newRecord: Intimation = {
+      id: generateId(),
+      customerName: customerName.trim().toUpperCase() || 'CUSTOMER',
+      mobileNumber: normalized,
+      articleType,
+      articleNumber: articleNumber.trim().toUpperCase(),
+      postOffice,
+      intimationDate,
+      collectionDays,
+      message: generatedMessage,
+      status: 'SENT',
+      createdAt: new Date().toISOString(),
+      sentAt: new Date().toISOString(),
+      dispatchChannel: 'WHATSAPP',
+      ...recordToSave,
+    };
+
+    onSaveIntimation(newRecord);
+    setShowConfirmModal(false);
+    setSendSuccessRecord(newRecord);
+
+    // Open WhatsApp
+    window.open(whatsappUrl, '_blank', 'noopener,noreferrer');
   };
 
   const handleSaveAsDraft = () => {
@@ -247,7 +282,7 @@ export const NewIntimationModal: React.FC<NewIntimationModalProps> = ({
     setShowConfirmModal(true);
   };
 
-  // Actual SMS Dispatch logic
+  // Actual Intimation Dispatch logic based on selected channel (SMS, WhatsApp, or Both)
   const handleExecuteSend = async () => {
     setIsSending(true);
     setSendErrorReason(null);
@@ -258,10 +293,17 @@ export const NewIntimationModal: React.FC<NewIntimationModalProps> = ({
     const cleanName = customerName.trim().toUpperCase();
     const requestId = `REQ-${cleanMobile}-${cleanArticleNum}-${Date.now()}`;
 
+    // 1. WhatsApp Only Channel
+    if (dispatchChannel === 'WHATSAPP') {
+      setIsSending(false);
+      handleOpenWhatsApp();
+      return;
+    }
+
+    // 2. Channels with SMS (SMS only or BOTH)
     try {
-      // If client is offline, fallback immediately to draft or manual SMS
       if (!isOnline) {
-        throw new Error('You are currently offline. Internet is required to send through SMS gateway.');
+        throw new Error('You are offline. Please send via native SMS app or WhatsApp.');
       }
 
       const response = await fetch('/api/sms/send', {
@@ -283,6 +325,12 @@ export const NewIntimationModal: React.FC<NewIntimationModalProps> = ({
         throw new Error(result.error || 'SMS delivery failed');
       }
 
+      // If channel is BOTH: Also trigger WhatsApp!
+      if (dispatchChannel === 'BOTH') {
+        const whatsappUrl = `https://api.whatsapp.com/send?phone=91${cleanMobile}&text=${encodeURIComponent(generatedMessage)}`;
+        window.open(whatsappUrl, '_blank', 'noopener,noreferrer');
+      }
+
       // Record successfully sent
       const newRecord: Intimation = {
         id: generateId(),
@@ -297,6 +345,7 @@ export const NewIntimationModal: React.FC<NewIntimationModalProps> = ({
         status: 'SENT',
         createdAt: new Date().toISOString(),
         sentAt: new Date().toISOString(),
+        dispatchChannel,
       };
 
       onSaveIntimation(newRecord);
@@ -650,6 +699,66 @@ export const NewIntimationModal: React.FC<NewIntimationModalProps> = ({
               </div>
             </div>
           </div>
+
+          {/* 8. Delivery Channel Selector (SMS, WhatsApp, Both) */}
+          <div className="bg-white border border-gray-200 rounded-2xl p-3.5 space-y-2.5 shadow-sm">
+            <div className="flex items-center justify-between">
+              <label className="text-xs font-bold text-gray-800 tracking-wider uppercase flex items-center gap-1.5">
+                <Send className="w-3.5 h-3.5 text-[#8B0000]" />
+                <span>{t.sendVia}</span>
+              </label>
+              <span className="text-[11px] font-semibold text-gray-400">Delivery Channel</span>
+            </div>
+
+            <div className="grid grid-cols-3 gap-2">
+              {/* SMS Button */}
+              <button
+                type="button"
+                onClick={() => setDispatchChannel('SMS')}
+                className={`py-2.5 px-2 rounded-xl text-xs font-bold border transition-all flex flex-col sm:flex-row items-center justify-center gap-1.5 ${
+                  dispatchChannel === 'SMS'
+                    ? 'bg-[#8B0000] text-white border-[#8B0000] shadow-sm ring-2 ring-red-200'
+                    : 'bg-gray-50 text-gray-700 border-gray-200 hover:bg-gray-100'
+                }`}
+              >
+                <MessageSquare className="w-3.5 h-3.5 flex-shrink-0" />
+                <span>SMS</span>
+              </button>
+
+              {/* WhatsApp Button */}
+              <button
+                type="button"
+                onClick={() => setDispatchChannel('WHATSAPP')}
+                className={`py-2.5 px-2 rounded-xl text-xs font-bold border transition-all flex flex-col sm:flex-row items-center justify-center gap-1.5 ${
+                  dispatchChannel === 'WHATSAPP'
+                    ? 'bg-emerald-600 text-white border-emerald-600 shadow-sm ring-2 ring-emerald-200'
+                    : 'bg-gray-50 text-gray-700 border-gray-200 hover:bg-gray-100'
+                }`}
+              >
+                <MessageCircle className="w-3.5 h-3.5 flex-shrink-0 text-emerald-300" />
+                <span>WhatsApp</span>
+              </button>
+
+              {/* Both Button */}
+              <button
+                type="button"
+                onClick={() => setDispatchChannel('BOTH')}
+                className={`py-2.5 px-2 rounded-xl text-xs font-bold border transition-all flex flex-col sm:flex-row items-center justify-center gap-1.5 ${
+                  dispatchChannel === 'BOTH'
+                    ? 'bg-gradient-to-r from-[#8B0000] to-emerald-600 text-white border-red-800 shadow-sm ring-2 ring-emerald-300 font-extrabold'
+                    : 'bg-gray-50 text-gray-700 border-gray-200 hover:bg-gray-100'
+                }`}
+              >
+                <span className="text-xs">⚡ Both</span>
+              </button>
+            </div>
+
+            <p className="text-[11px] text-gray-500 font-medium">
+              {dispatchChannel === 'SMS' && 'Dispatches official Indian Post DLT SMS to the customer.'}
+              {dispatchChannel === 'WHATSAPP' && 'Opens WhatsApp chat with customer pre-filled with postal intimation.'}
+              {dispatchChannel === 'BOTH' && 'Sends official SMS and triggers WhatsApp message for guaranteed delivery.'}
+            </p>
+          </div>
         </div>
 
         {/* Footer Main Send Action Button */}
@@ -666,10 +775,24 @@ export const NewIntimationModal: React.FC<NewIntimationModalProps> = ({
             type="button"
             id="btn-primary-send-intimation"
             onClick={handleInitiateSend}
-            className="flex-1 bg-[#8B0000] hover:bg-[#740000] active:scale-[0.98] text-white py-3.5 px-4 rounded-xl font-bold shadow-lg shadow-red-900/25 flex items-center justify-center gap-2 transition-all text-sm tracking-wide uppercase"
+            className={`flex-1 active:scale-[0.98] text-white py-3.5 px-4 rounded-xl font-bold shadow-lg flex items-center justify-center gap-2 transition-all text-sm tracking-wide uppercase ${
+              dispatchChannel === 'WHATSAPP'
+                ? 'bg-emerald-600 hover:bg-emerald-700 shadow-emerald-900/20'
+                : dispatchChannel === 'BOTH'
+                ? 'bg-gradient-to-r from-[#8B0000] via-red-800 to-emerald-700 hover:brightness-105 shadow-red-900/30'
+                : 'bg-[#8B0000] hover:bg-[#740000] shadow-red-900/25'
+            }`}
           >
-            <Send className="w-4 h-4" />
-            <span>{t.sendIntimation}</span>
+            {dispatchChannel === 'SMS' && <MessageSquare className="w-4 h-4" />}
+            {dispatchChannel === 'WHATSAPP' && <MessageCircle className="w-4 h-4" />}
+            {dispatchChannel === 'BOTH' && <Send className="w-4 h-4" />}
+            <span>
+              {dispatchChannel === 'SMS'
+                ? t.sendIntimation
+                : dispatchChannel === 'WHATSAPP'
+                ? t.sendWhatsApp
+                : t.sendBoth}
+            </span>
           </button>
         </div>
       </div>
@@ -703,7 +826,47 @@ export const NewIntimationModal: React.FC<NewIntimationModalProps> = ({
                 <strong className="text-gray-900 truncate max-w-[180px]">{postOffice}</strong>
               </div>
 
-              <div className="pt-2">
+              {/* Delivery Channel Selector in Confirm */}
+              <div className="flex justify-between py-1 border-b border-gray-50 items-center">
+                <span className="text-gray-500 font-medium">{t.sendVia}:</span>
+                <div className="flex gap-1">
+                  <button
+                    type="button"
+                    onClick={() => setDispatchChannel('SMS')}
+                    className={`px-2 py-0.5 rounded-lg text-[10px] font-bold uppercase transition-all ${
+                      dispatchChannel === 'SMS'
+                        ? 'bg-[#8B0000] text-white shadow-xs'
+                        : 'bg-gray-100 text-gray-600 hover:bg-gray-200'
+                    }`}
+                  >
+                    SMS
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => setDispatchChannel('WHATSAPP')}
+                    className={`px-2 py-0.5 rounded-lg text-[10px] font-bold uppercase transition-all ${
+                      dispatchChannel === 'WHATSAPP'
+                        ? 'bg-emerald-600 text-white shadow-xs'
+                        : 'bg-gray-100 text-gray-600 hover:bg-gray-200'
+                    }`}
+                  >
+                    WhatsApp
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => setDispatchChannel('BOTH')}
+                    className={`px-2 py-0.5 rounded-lg text-[10px] font-bold uppercase transition-all ${
+                      dispatchChannel === 'BOTH'
+                        ? 'bg-gradient-to-r from-[#8B0000] to-emerald-600 text-white shadow-xs'
+                        : 'bg-gray-100 text-gray-600 hover:bg-gray-200'
+                    }`}
+                  >
+                    Both
+                  </button>
+                </div>
+              </div>
+
+              <div className="pt-1.5">
                 <span className="text-gray-500 font-medium block mb-1">{t.message}:</span>
                 <p className="bg-gray-50 p-2.5 rounded-xl border border-gray-100 text-[11px] text-gray-800 leading-relaxed font-mono">
                   {generatedMessage}
@@ -715,7 +878,7 @@ export const NewIntimationModal: React.FC<NewIntimationModalProps> = ({
               <div className="p-3 bg-rose-50 border border-rose-200 rounded-xl text-xs text-rose-800 space-y-2">
                 <div className="flex items-center gap-1.5 font-bold">
                   <AlertCircle className="w-4 h-4 text-rose-600" />
-                  <span>SMS Failed</span>
+                  <span>Delivery Notice</span>
                 </div>
                 <p className="text-[11px] leading-relaxed">{sendErrorReason}</p>
                 <div className="pt-1 flex gap-2">
@@ -728,10 +891,10 @@ export const NewIntimationModal: React.FC<NewIntimationModalProps> = ({
                   </button>
                   <button
                     type="button"
-                    onClick={handleExecuteSend}
-                    className="flex-1 bg-rose-700 text-white font-bold py-1.5 rounded-lg text-xs hover:bg-rose-800"
+                    onClick={() => handleOpenWhatsApp()}
+                    className="flex-1 bg-emerald-600 text-white font-bold py-1.5 rounded-lg text-xs hover:bg-emerald-700"
                   >
-                    Retry
+                    Open WhatsApp
                   </button>
                 </div>
               </div>
@@ -752,14 +915,28 @@ export const NewIntimationModal: React.FC<NewIntimationModalProps> = ({
                 disabled={isSending}
                 id="btn-confirm-send-now"
                 onClick={handleExecuteSend}
-                className="flex-1 bg-[#8B0000] hover:bg-[#740000] text-white py-3 px-4 rounded-xl font-bold text-xs shadow-md shadow-red-900/30 flex items-center justify-center gap-1.5 disabled:opacity-50"
+                className={`flex-1 text-white py-3 px-4 rounded-xl font-bold text-xs shadow-md flex items-center justify-center gap-1.5 disabled:opacity-50 transition-all ${
+                  dispatchChannel === 'WHATSAPP'
+                    ? 'bg-emerald-600 hover:bg-emerald-700 shadow-emerald-900/20'
+                    : dispatchChannel === 'BOTH'
+                    ? 'bg-gradient-to-r from-[#8B0000] to-emerald-700 hover:brightness-105 shadow-red-900/25'
+                    : 'bg-[#8B0000] hover:bg-[#740000] shadow-red-900/25'
+                }`}
               >
                 {isSending ? (
                   <span>{t.sending}</span>
                 ) : (
                   <>
-                    <Send className="w-3.5 h-3.5" />
-                    <span>{t.sendNow}</span>
+                    {dispatchChannel === 'SMS' && <MessageSquare className="w-3.5 h-3.5" />}
+                    {dispatchChannel === 'WHATSAPP' && <MessageCircle className="w-3.5 h-3.5" />}
+                    {dispatchChannel === 'BOTH' && <Send className="w-3.5 h-3.5" />}
+                    <span>
+                      {dispatchChannel === 'SMS'
+                        ? t.sendNow
+                        : dispatchChannel === 'WHATSAPP'
+                        ? t.sendWhatsApp
+                        : t.sendBoth}
+                    </span>
                   </>
                 )}
               </button>
@@ -876,6 +1053,22 @@ export const NewIntimationModal: React.FC<NewIntimationModalProps> = ({
                 <span className="text-gray-500 font-medium">{t.article}:</span>
                 <strong className="text-[#8B0000] font-mono">{sendSuccessRecord.articleNumber}</strong>
               </div>
+              <div className="flex justify-between items-center">
+                <span className="text-gray-500 font-medium">{t.sendVia}:</span>
+                <span
+                  className={`px-2 py-0.5 rounded-full text-[10px] font-extrabold uppercase ${
+                    sendSuccessRecord.dispatchChannel === 'WHATSAPP'
+                      ? 'bg-emerald-100 text-emerald-800'
+                      : sendSuccessRecord.dispatchChannel === 'BOTH'
+                      ? 'bg-gradient-to-r from-red-100 to-emerald-100 text-emerald-900 border border-emerald-300'
+                      : 'bg-red-100 text-[#8B0000]'
+                  }`}
+                >
+                  {sendSuccessRecord.dispatchChannel === 'BOTH'
+                    ? '⚡ SMS + WhatsApp'
+                    : sendSuccessRecord.dispatchChannel || 'SMS'}
+                </span>
+              </div>
               <div className="flex justify-between">
                 <span className="text-gray-500 font-medium">Sent At:</span>
                 <span className="text-gray-700 font-medium">
@@ -885,6 +1078,27 @@ export const NewIntimationModal: React.FC<NewIntimationModalProps> = ({
                   })}
                 </span>
               </div>
+            </div>
+
+            {/* Quick Multi-Channel Action Links */}
+            <div className="flex gap-2 pt-1">
+              <a
+                href={`https://api.whatsapp.com/send?phone=91${cleanIndianMobileNumber(sendSuccessRecord.mobileNumber).normalized}&text=${encodeURIComponent(sendSuccessRecord.message)}`}
+                target="_blank"
+                rel="noopener noreferrer"
+                className="flex-1 py-2.5 bg-emerald-50 text-emerald-800 hover:bg-emerald-100 border border-emerald-200 rounded-xl text-xs font-bold flex items-center justify-center gap-1.5 transition-colors"
+              >
+                <MessageCircle className="w-4 h-4 text-emerald-600" />
+                <span>WhatsApp</span>
+              </a>
+
+              <a
+                href={`sms:${cleanIndianMobileNumber(sendSuccessRecord.mobileNumber).normalized}?body=${encodeURIComponent(sendSuccessRecord.message)}`}
+                className="flex-1 py-2.5 bg-blue-50 text-blue-800 hover:bg-blue-100 border border-blue-200 rounded-xl text-xs font-bold flex items-center justify-center gap-1.5 transition-colors"
+              >
+                <MessageSquare className="w-4 h-4 text-blue-600" />
+                <span>SMS App</span>
+              </a>
             </div>
 
             <div className="space-y-2 pt-2">

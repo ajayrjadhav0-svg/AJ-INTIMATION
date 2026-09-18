@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { Mail, MoreVertical, Wifi, WifiOff, Settings, Upload, RefreshCw, Smartphone, ShieldCheck } from 'lucide-react';
+import { Mail, MoreVertical, Wifi, WifiOff, Settings, Upload, RefreshCw, Smartphone, ShieldCheck, Download } from 'lucide-react';
 import { Language, PostmanSettings } from '../types';
 import { translations } from '../i18n';
 
@@ -13,6 +13,7 @@ interface HeaderProps {
   onResetDemo: () => void;
   onInstallPWA?: () => void;
   canInstall?: boolean;
+  onGoHome?: () => void;
 }
 
 export const Header: React.FC<HeaderProps> = ({
@@ -25,6 +26,7 @@ export const Header: React.FC<HeaderProps> = ({
   onResetDemo,
   onInstallPWA,
   canInstall,
+  onGoHome,
 }) => {
   const [showMenu, setShowMenu] = useState(false);
   const t = translations[language];
@@ -34,7 +36,10 @@ export const Header: React.FC<HeaderProps> = ({
       {/* Top App Bar */}
       <div className="px-4 py-2.5 flex items-center justify-between">
         {/* App Logo & Title */}
-        <div className="flex items-center gap-2.5">
+        <div
+          onClick={onGoHome}
+          className="flex items-center gap-2.5 cursor-pointer hover:opacity-95 transition-opacity"
+        >
           <div className="w-10 h-10 rounded-full bg-white/10 border border-white/20 flex items-center justify-center shadow-inner overflow-hidden flex-shrink-0">
             <svg viewBox="0 0 100 100" className="w-7 h-7 text-white fill-current">
               <circle cx="50" cy="50" r="46" fill="none" stroke="currentColor" strokeWidth="6" opacity="0.4" />
@@ -136,6 +141,16 @@ export const Header: React.FC<HeaderProps> = ({
                       <span>Install Intimation PWA</span>
                     </button>
                   )}
+
+                  <a
+                    href="/api/download-source"
+                    download
+                    onClick={() => setShowMenu(false)}
+                    className="w-full text-left px-3 py-2 hover:bg-emerald-50 text-emerald-800 flex items-center gap-2.5 font-medium"
+                  >
+                    <Download className="w-4 h-4 text-emerald-700" />
+                    <span>Download App Code (.tar.gz)</span>
+                  </a>
 
                   <button
                     onClick={() => {

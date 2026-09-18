@@ -13,17 +13,21 @@ import {
   ExternalLink,
   Clock,
   Calendar,
-  ChevronDown
+  ChevronDown,
+  ArrowLeft,
+  MessageSquare,
+  MessageCircle
 } from 'lucide-react';
 import { Intimation, Language } from '../types';
 import { translations } from '../i18n';
-import { maskMobileNumber } from '../lib/storage';
+import { cleanIndianMobileNumber, maskMobileNumber } from '../lib/storage';
 
 interface HistoryViewProps {
   intimations: Intimation[];
   language: Language;
   onRepeatIntimation: (record: Intimation) => void;
   onRetrySend?: (record: Intimation) => void;
+  onBackToHome?: () => void;
 }
 
 export const HistoryView: React.FC<HistoryViewProps> = ({
@@ -31,6 +35,7 @@ export const HistoryView: React.FC<HistoryViewProps> = ({
   language,
   onRepeatIntimation,
   onRetrySend,
+  onBackToHome,
 }) => {
   const t = translations[language];
 
@@ -159,16 +164,28 @@ export const HistoryView: React.FC<HistoryViewProps> = ({
   };
 
   return (
-    <div className="p-4 space-y-4 max-w-lg mx-auto pb-28 text-gray-800">
+    <div className="p-4 space-y-4 max-w-lg mx-auto pb-16 text-gray-800">
       {/* Header & Export Controls */}
       <div className="flex items-center justify-between">
-        <div>
-          <h2 className="text-base font-bold text-gray-900 uppercase tracking-tight">
-            {t.recordsLog}
-          </h2>
-          <p className="text-xs text-gray-500 font-medium">
-            {filteredRecords.length} records found
-          </p>
+        <div className="flex items-center gap-2.5">
+          {onBackToHome && (
+            <button
+              type="button"
+              onClick={onBackToHome}
+              className="p-2 bg-white border border-gray-200 rounded-xl hover:bg-gray-50 active:scale-95 transition-all text-gray-700 shadow-sm"
+              aria-label="Back to Home"
+            >
+              <ArrowLeft className="w-4 h-4" />
+            </button>
+          )}
+          <div>
+            <h2 className="text-base font-bold text-gray-900 uppercase tracking-tight">
+              {t.recordsLog}
+            </h2>
+            <p className="text-xs text-gray-500 font-medium">
+              {filteredRecords.length} records found
+            </p>
+          </div>
         </div>
 
         <div className="flex gap-2">
@@ -245,7 +262,7 @@ export const HistoryView: React.FC<HistoryViewProps> = ({
               key={item.id}
               className="bg-white rounded-2xl p-4 shadow-sm border border-gray-100 hover:shadow-md transition-shadow space-y-2.5 text-xs"
             >
-              {/* Row 1: Customer Name, Status Badge */}
+              {/* Row 1: Customer Name, Status & Channel Badges */}
               <div className="flex items-start justify-between">
                 <div>
                   <h4 className="font-bold text-gray-900 uppercase text-sm tracking-tight">
@@ -257,7 +274,25 @@ export const HistoryView: React.FC<HistoryViewProps> = ({
                     <span>{item.intimationDate}</span>
                   </div>
                 </div>
-                {getStatusBadge(item.status)}
+                <div className="flex items-center gap-1.5 flex-wrap justify-end">
+                  {item.dispatchChannel === 'WHATSAPP' && (
+                    <span className="px-1.5 py-0.5 rounded-full text-[10px] font-bold bg-emerald-100 text-emerald-800 flex items-center gap-0.5">
+                      <MessageCircle className="w-2.5 h-2.5" />
+                      <span>WhatsApp</span>
+                    </span>
+                  )}
+                  {item.dispatchChannel === 'BOTH' && (
+                    <span className="px-1.5 py-0.5 rounded-full text-[10px] font-bold bg-gradient-to-r from-red-100 to-emerald-100 text-emerald-900 border border-emerald-300">
+                      ⚡ SMS+WA
+                    </span>
+                  )}
+                  {item.dispatchChannel === 'SMS' && (
+                    <span className="px-1.5 py-0.5 rounded-full text-[10px] font-bold bg-blue-50 text-blue-700">
+                      SMS
+                    </span>
+                  )}
+                  {getStatusBadge(item.status)}
+                </div>
               </div>
 
               {/* Row 2: Article Info */}
@@ -300,11 +335,29 @@ export const HistoryView: React.FC<HistoryViewProps> = ({
                 </button>
 
                 <div className="flex items-center gap-1.5">
+                  <a
+                    href={`https://api.whatsapp.com/send?phone=91${cleanIndianMobileNumber(item.mobileNumber).normalized}&text=${encodeURIComponent(item.message)}`}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className="p-1.5 text-emerald-600 hover:text-emerald-800 rounded-lg hover:bg-emerald-50 transition-colors"
+                    title="Open in WhatsApp"
+                  >
+                    <MessageCircle className="w-3.5 h-3.5" />
+                  </a>
+
+                  <a
+                    href={`sms:${cleanIndianMobileNumber(item.mobileNumber).normalized}?body=${encodeURIComponent(item.message)}`}
+                    className="p-1.5 text-blue-600 hover:text-blue-800 rounded-lg hover:bg-blue-50 transition-colors"
+                    title="Open in SMS App"
+                  >
+                    <MessageSquare className="w-3.5 h-3.5" />
+                  </a>
+
                   <button
                     type="button"
                     onClick={() => handleCopyMessage(item.id, item.message)}
                     className="p-1.5 text-gray-500 hover:text-gray-800 rounded-lg hover:bg-gray-100 transition-colors"
-                    title="Copy SMS Message"
+                    title="Copy Message"
                   >
                     <Copy className="w-3.5 h-3.5" />
                   </button>

@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { Header } from './components/Header';
 import { HomeView } from './components/HomeView';
-import { Navbar, TabType } from './components/Navbar';
+import { TabType } from './components/Navbar';
 import { NewIntimationModal } from './components/NewIntimationModal';
 import { CameraScannerModal } from './components/CameraScannerModal';
 import { HistoryView } from './components/HistoryView';
@@ -129,6 +129,7 @@ export default function App() {
         onResetDemo={handleResetDemoData}
         onInstallPWA={handleInstallPWA}
         canInstall={!!deferredPrompt}
+        onGoHome={() => setCurrentTab('home')}
       />
 
       {/* Main Content Area based on Active Tab */}
@@ -170,30 +171,18 @@ export default function App() {
             intimations={intimations}
             language={language}
             onRepeatIntimation={handleRepeatIntimation}
+            onBackToHome={() => setCurrentTab('home')}
           />
         )}
 
         {currentTab === 'dashboard' && (
-          <DashboardView intimations={intimations} language={language} />
+          <DashboardView
+            intimations={intimations}
+            language={language}
+            onBackToHome={() => setCurrentTab('home')}
+          />
         )}
       </main>
-
-      {/* Bottom Floating Navigation Bar */}
-      <Navbar
-        currentTab={currentTab}
-        onSelectTab={(tab) => {
-          if (tab === 'scan') {
-            setIsScannerOpen(true);
-          } else {
-            setCurrentTab(tab);
-          }
-        }}
-        onOpenNewIntimation={() => {
-          setPrefillData(undefined);
-          setIsNewIntimationOpen(true);
-        }}
-        language={language}
-      />
 
       {/* Modal 1: New Intimation Modal */}
       <NewIntimationModal

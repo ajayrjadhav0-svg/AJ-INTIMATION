@@ -34,6 +34,8 @@ export interface MessageTemplate {
   createdAt: string;
 }
 
+export type DispatchChannel = 'SMS' | 'WHATSAPP' | 'BOTH';
+
 export interface Intimation {
   id: string;
   customerName: string;
@@ -50,6 +52,7 @@ export interface Intimation {
   failureReason?: string;
   photoReference?: string;
   userId?: string;
+  dispatchChannel?: DispatchChannel;
 }
 
 export interface PostmanSettings {
